@@ -110,7 +110,12 @@ export default async function handler(req, res) {
     search.set("access_key", apiKey());
     for (const [k, v] of Object.entries(params)) search.set(k, v);
 
-    const upstream = await fetch(`${UPSTREAM}/${endpoint}?${search}`, { headers: { Accept: "*/*" } });
+    const controller = new AbortController();
+const timer = setTimeout(() => controller.abort(), 8000);
+const upstream = await fetch(`${UPSTREAM}/${endpoint}?${search}`, {
+  headers: { Accept: "*/*" },
+  signal: controller.signal,
+}).finally(() => clearTimeout(timer));
     const { contentType, text, payload, isJson } = await readUpstream(upstream);
     if (isUpstreamError(upstream, payload, isJson)) {
       return res.status(502).json({
