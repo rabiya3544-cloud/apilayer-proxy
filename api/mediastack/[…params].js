@@ -18,11 +18,11 @@ const SHARED_SCHEMA = {
 };
 
 const SCHEMAS = {
-  sources: { ...SHARED_SCHEMA, search: { type: "text", maxLen: 200 } },
+  sources: { ...SHARED_SCHEMA, search: { type: "text", maxLen: 200, required: true, hint: "Source name, e.g. bbc." } },
   news: {
     ...SHARED_SCHEMA,
     search:   { type: "text", maxLen: 200 },
-    keywords: { type: "text", maxLen: 200 },
+    keywords: { type: "text", maxLen: 200, required: true },
     sources:  { type: "pattern", pattern: /^-?[a-z0-9-]+(,-?[a-z0-9-]+)*$/i, maxLen: 500 },
     date:     { type: "pattern", pattern: /^\d{4}-\d{2}-\d{2}(,\d{4}-\d{2}-\d{2})?$/, maxLen: 40 },
     sort:     { type: "enum", values: ["published_at","-published_at"], default: "published_at" },
