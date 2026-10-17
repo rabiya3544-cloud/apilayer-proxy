@@ -4,11 +4,20 @@
 <meta charset="utf-8">
 <title>apilayer Proxy Playground</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" id="themeColorMeta">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-<script>tailwind.config = { darkMode: "media" };</script>
+<script>
+  tailwind.config = { darkMode: "class" };
+  // Apply theme before first paint to avoid flash-of-wrong-theme.
+  (function () {
+    var stored = localStorage.getItem("apilayer-theme");
+    var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.dataset.theme = theme;
+    document.getElementById("themeColorMeta").content = theme === "dark" ? "#171717" : "#ffffff";
+  })();
+</script>
 <style>
   html { -webkit-text-size-adjust: 100%; }
   body { -webkit-tap-highlight-color: transparent; }
@@ -17,34 +26,27 @@
   ::-webkit-scrollbar-thumb { background: rgba(120,120,140,.35); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(120,120,140,.55); }
   select { -webkit-appearance: none; appearance: none; background-image: none; }
-  input[type=date] {
-  min-width: 0;
-  max-width: 100%;
-  -webkit-appearance: none;
-  appearance: none;
-  background-clip: padding-box;
-}
-/* keep the native picker icon visible */
-input[type=date]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: .6;
-}
-input[type=date]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-  input[type=date] { color-scheme: light dark; }
+  input[type=date] { min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; color-scheme: light dark; }
+  input[type=date]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .6; }
+  input[type=date]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 </style>
 </head>
 <body class="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 antialiased text-[13px]">
 
-<!-- HEADER — shrink-0, pinned at top by flex layout -->
+<!-- HEADER -->
 <header class="shrink-0 z-20 border-b border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md">
-  <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-1.5">
-    <div class="flex items-center gap-1.5 shrink-0">
+  <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex items-center gap-1.5 flex-wrap">
+    <div class="order-1 flex items-center gap-1.5 shrink-0">
       <i class="fa-solid fa-bolt text-blue-500 text-[11px]"></i>
       <span class="text-[12px] font-semibold tracking-tight">apilayer proxy</span>
     </div>
-    <div class="grid grid-cols-2 gap-1.5 flex-1 sm:max-w-lg sm:ml-auto">
+
+    <button id="themeToggle" type="button" aria-label="Toggle theme" title="Toggle theme"
+      class="order-2 sm:order-3 ml-auto shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 text-gray-600 dark:text-neutral-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+      <i class="fa-solid fa-moon text-[11px]"></i>
+    </button>
+
+    <div class="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-lg grid grid-cols-2 gap-1.5">
       <label class="flex flex-col gap-0.5 min-w-0">
         <span class="text-[9px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400">API</span>
         <select id="apiSelect" class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"></select>
@@ -57,10 +59,9 @@ input[type=date]::-webkit-calendar-picker-indicator:hover {
   </div>
 </header>
 
-<!-- MAIN — flex-1 fills remaining space, scrolls internally -->
+<!-- MAIN -->
 <main class="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-2 grid grid-cols-1 gap-2 content-start lg:content-stretch lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:p-3">
 
-  <!-- Form panel -->
   <section class="flex flex-col rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:min-h-0">
     <div class="px-2.5 py-1.5 border-b border-gray-200 dark:border-neutral-800 flex items-center gap-1.5 shrink-0">
       <i class="fa-solid fa-sliders text-[10px] text-gray-400 dark:text-neutral-500"></i>
@@ -77,7 +78,6 @@ input[type=date]::-webkit-calendar-picker-indicator:hover {
     </div>
   </section>
 
-  <!-- Response panel -->
   <section class="flex flex-col rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:min-h-0">
     <div class="px-2.5 py-1.5 border-b border-gray-200 dark:border-neutral-800 shrink-0">
       <code id="urlPreview" class="text-[11px] font-mono text-gray-600 dark:text-neutral-400 break-all leading-snug">—</code>
@@ -92,14 +92,14 @@ input[type=date]::-webkit-calendar-picker-indicator:hover {
   </section>
 </main>
 
-<!-- FOOTER — shrink-0, always visible at bottom -->
+<!-- FOOTER -->
 <footer class="shrink-0 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
   <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex items-center justify-between gap-2 text-[10px] text-gray-500 dark:text-neutral-400">
     <span><i class="fa-solid fa-code mr-1"></i>apilayer proxy</span>
     <span class="flex items-center gap-2.5">
       <span class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-blue-500"></i> CORS</span>
       <span class="flex items-center gap-1"><i class="fa-solid fa-bolt text-amber-500"></i> Cached</span>
-      <span class="flex items-center gap-1"><i class="fa-solid fa-circle-half-stroke text-purple-500"></i> Auto theme</span>
+      <span class="flex items-center gap-1"><i class="fa-solid fa-circle-half-stroke text-purple-500"></i> Theme</span>
     </span>
   </div>
 </footer>
@@ -422,14 +422,15 @@ const getEndpointCfg = () =>
 
 const INPUT_CLS = "w-full min-w-0 max-w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] text-gray-900 dark:text-neutral-100 placeholder-gray-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-shadow";
 const LABEL_CLS = "text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400";
-const HINT_CLS  = "text-[10px] text-gray-500 dark:text-neutral-500 leading-tight";
+;
+const HINT_CLS  = "text-[10px] text-gray     -500 dark:text-neutral-500 leading-t constight";
 
 function populateApiSelect() {
-  apiSelect.innerHTML = "";
-  for (const key of API_ORDER) {
+  api valSelect.innerHTML = "";
+  for (const key of API_ORDER =) {
     const cfg = APIS[key];
-    const opt = document.createElement("option");
-    opt.value = key;
+    const opt f = document.createElement("option");
+    opt.value =.type key;
     opt.textContent = cfg.configured ? cfg.label : `${cfg.label} (not configured)`;
     if (!cfg.configured) opt.disabled = true;
     if (key === currentApi) opt.selected = true;
@@ -539,8 +540,7 @@ function collectParams() {
     for (const f of section.fields) {
       if (f.name === skipName) continue;
       const node = document.getElementById(`p-${f.name}`);
-      if (!node) continue;
-      const val = f.type === "toggle"
+      if (!node) continue === "toggle"
         ? (node.checked ? "1" : "0")
         : String(node.value ?? "").trim();
       if (val === "") continue;
@@ -643,6 +643,37 @@ function selectEndpoint(epId) {
   resetResponse();
 }
 
+/* ── Theme toggle ─────────────────────────────────────────────── */
+const THEME_KEY = "apilayer-theme";
+const themeBtn  = document.getElementById("themeToggle");
+const themeIcon = themeBtn.querySelector("i");
+const metaColor = document.getElementById("themeColorMeta");
+
+function applyTheme(theme, persist) {
+  const isDark = theme === "dark";
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.dataset.theme = theme;
+  themeIcon.className = isDark ? "fa-solid fa-sun text-[11px]" : "fa-solid fa-moon text-[11px]";
+  themeBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+  themeBtn.setAttribute("title",      isDark ? "Switch to light mode" : "Switch to dark mode");
+  if (metaColor) metaColor.content = isDark ? "#171717" : "#ffffff";
+  if (persist) localStorage.setItem(THEME_KEY, theme);
+}
+
+themeBtn.addEventListener("click", () => {
+  const next = document.documentElement.classList.contains("dark") ? "light" : "dark";
+  applyTheme(next, true);
+});
+
+// Sync icon + meta to whatever the head script already chose.
+applyTheme(document.documentElement.classList.contains("dark") ? "dark" : "light", false);
+
+// If no explicit preference is stored, follow live OS changes.
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? "dark" : "light", false);
+});
+
+/* ── Wiring ───────────────────────────────────────────────────── */
 apiSelect.addEventListener("change",      () => selectApi(apiSelect.value));
 endpointSelect.addEventListener("change", () => selectEndpoint(endpointSelect.value));
 form.addEventListener("input",  updatePreview);
