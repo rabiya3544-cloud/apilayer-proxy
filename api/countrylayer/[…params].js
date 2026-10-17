@@ -14,13 +14,22 @@ const ENDPOINTS = {
   currency:     { required: true, type: "pattern", pattern: /^[a-z]{3}$/i, hint: "ISO 4217 (EUR, USD)" },
   region:       { required: true, type: "enum",    values: ["Africa","Americas","Asia","Europe","Oceania","Antarctic"] },
   regionalbloc: { required: true, type: "text",    maxLen: 50 },
-  callingcode:  { required: true, type: "pattern", pattern: /^\d{1,4}$/, hint: "1–4 digits" },
+  callingcode:  { required: true, type: "pattern", pattern: /^\d{1,4}$/, hint: "1-4 digits" },
   alpha:        { required: true, type: "pattern", pattern: /^[a-z]{2,3}$/i, hint: "2 or 3 letters" },
 };
 
 const CACHE_SECONDS = 60 * 60 * 24 * 7;
 const SWR_SECONDS   = 60 * 60 * 24 * 30;
 const cache = createCache(100);
+
+function getSegments(req) {
+  const raw = req.query.params;
+  if (Array.isArray(raw) && raw.length) return raw;
+  if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
+  const urlPath = String(req.url || "").split("?")[0];
+  const parts = urlPath.split("/").filter(Boolean);
+  return parts.length > 2 ? parts.slice(2) : [];
+}
 
 function normalizeFilters(raw) {
   if (typeof raw !== "string" || !raw.trim()) return "";
@@ -32,11 +41,16 @@ export default async function handler(req, res) {
   if (rejectMethod(req, res)) return;
   if (requireKey(res)) return;
 
-  const segments = Array.isArray(rawParams) ? rawParams : typeof rawParams === "string" ? rawParams.split("/").filter(Boolean) : [];
+  const segments = getSegments(req);
   const endpoint = (segments[0] || "all").toLowerCase();
   const rawValue = segments.slice(1).join("/");
   const rule = ENDPOINTS[endpoint];
-  if (!rule) return sendError(res, 400, "Unknown endpoint", Object.keys(ENDPOINTS));
+  if (!rule) {
+    return sendError(res, 400, "Unknown endpoint", {
+      allowed: Object.keys(ENDPOINTS),
+      debug: { url: req.url, queryKeys: Object.keys(req.query), segments },
+    });
+  }
 
   let value = "";
   if (rule.required) {
