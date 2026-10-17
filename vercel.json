@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/countrylayer",     "destination": "/api/countrylayer/all" },
     { "source": "/api/all",              "destination": "/api/countrylayer/all" },
     { "source": "/api/countries",        "destination": "/api/countrylayer/all" },
     { "source": "/api/countries/:path*", "destination": "/api/countrylayer/:path*" },
@@ -9,11 +10,6 @@
     { "source": "/index",           "destination": "/index.html" }
   ],
   "functions": {
-    "api/countrylayer/[...params].js":  { "maxDuration": 10 },
-    "api/serpstack/[...params].js":     { "maxDuration": 15 },
-    "api/mediastack/[...params].js":    { "maxDuration": 15 },
-    "api/aviationstack/[...params].js": { "maxDuration": 15 },
-    "api/ipstack/[...params].js":       { "maxDuration": 10 },
-    "api/numverify/[...params].js":     { "maxDuration": 10 }
+    "api/**/*.js": { "maxDuration": 15 }
   }
 }
