@@ -18,14 +18,16 @@ const SHARED_SCHEMA = {
 };
 
 const SCHEMAS = {
-  sources: { ...SHARED_SCHEMA, search: { type: "text", maxLen: 200, required: true, hint: "Source name, e.g. bbc." } },
+  sources: {
+    ...SHARED_SCHEMA,
+    search: { type: "text", maxLen: 200, required: true, hint: "Source name, e.g. bbc." },
+  },
   news: {
     ...SHARED_SCHEMA,
     search:   { type: "text", maxLen: 200 },
     keywords: { type: "text", maxLen: 200, required: true },
     sources:  { type: "pattern", pattern: /^-?[a-z0-9-]+(,-?[a-z0-9-]+)*$/i, maxLen: 500 },
     date:     { type: "pattern", pattern: /^\d{4}-\d{2}-\d{2}(,\d{4}-\d{2}-\d{2})?$/, maxLen: 40 },
-    sort:     { type: "enum", values: ["published_at","-published_at"], default: "published_at" },
   },
 };
 SCHEMAS.live = SCHEMAS.news;
@@ -33,6 +35,9 @@ SCHEMAS.live = SCHEMAS.news;
 const cache = createCache(100);
 
 function getSegments(req) {
+  if (typeof req.query.path === "string" && req.query.path) {
+    return req.query.path.split("/").filter(Boolean);
+  }
   const raw = req.query.params;
   if (Array.isArray(raw) && raw.length) return raw;
   if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
