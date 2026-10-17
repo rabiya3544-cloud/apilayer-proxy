@@ -23,6 +23,9 @@ const SWR_SECONDS   = 60 * 60 * 24 * 30;
 const cache = createCache(100);
 
 function getSegments(req) {
+  if (typeof req.query.path === "string" && req.query.path) {
+    return req.query.path.split("/").filter(Boolean);
+  }
   const raw = req.query.params;
   if (Array.isArray(raw) && raw.length) return raw;
   if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
