@@ -8,9 +8,7 @@
 <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-<script>
-  tailwind.config = { darkMode: "media" };
-</script>
+<script>tailwind.config = { darkMode: "media" };</script>
 <style>
   html { -webkit-text-size-adjust: 100%; }
   body { -webkit-tap-highlight-color: transparent; }
@@ -21,10 +19,10 @@
   select { -webkit-appearance: none; appearance: none; background-image: none; }
 </style>
 </head>
-<body class="min-h-screen flex flex-col bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 antialiased text-[13px]">
+<body class="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 antialiased text-[13px]">
 
-<!-- ═══════ HEADER ═══════ -->
-<header class="sticky top-0 z-20 border-b border-gray-200 dark:border-neutral-800 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md">
+<!-- HEADER — shrink-0, pinned at top by flex layout -->
+<header class="shrink-0 z-20 border-b border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md">
   <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center gap-1.5">
     <div class="flex items-center gap-1.5 shrink-0">
       <i class="fa-solid fa-bolt text-blue-500 text-[11px]"></i>
@@ -43,11 +41,11 @@
   </div>
 </header>
 
-<!-- ═══════ MAIN ═══════ -->
-<main class="flex-1 mx-auto max-w-7xl w-full p-2 grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:p-3 lg:overflow-hidden lg:h-[calc(100vh-6.5rem)]">
+<!-- MAIN — flex-1 fills remaining space, scrolls internally -->
+<main class="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-2 grid grid-cols-1 gap-2 content-start lg:content-stretch lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:p-3">
 
-  <!-- ─── Form panel ─── -->
-  <section class="flex flex-col min-h-0 rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:max-h-full">
+  <!-- Form panel -->
+  <section class="flex flex-col rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:min-h-0">
     <div class="px-2.5 py-1.5 border-b border-gray-200 dark:border-neutral-800 flex items-center gap-1.5 shrink-0">
       <i class="fa-solid fa-sliders text-[10px] text-gray-400 dark:text-neutral-500"></i>
       <span class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400">Parameters</span>
@@ -63,8 +61,8 @@
     </div>
   </section>
 
-  <!-- ─── Response panel ─── -->
-  <section class="flex flex-col min-h-0 rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:max-h-full">
+  <!-- Response panel -->
+  <section class="flex flex-col rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:min-h-0">
     <div class="px-2.5 py-1.5 border-b border-gray-200 dark:border-neutral-800 shrink-0">
       <code id="urlPreview" class="text-[11px] font-mono text-gray-600 dark:text-neutral-400 break-all leading-snug">—</code>
     </div>
@@ -74,12 +72,12 @@
       <span id="size" class="text-gray-500 dark:text-neutral-400"><i class="fa-solid fa-database mr-1 text-[10px]"></i>—</span>
       <span id="cache" class="text-gray-500 dark:text-neutral-400"><i class="fa-solid fa-bolt mr-1 text-[10px]"></i>—</span>
     </div>
-    <pre id="response" class="flex-1 overflow-auto p-2.5 m-0 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words text-gray-800 dark:text-neutral-200 min-h-[240px]">Run a query to see the response.</pre>
+    <pre id="response" class="flex-1 min-h-[120px] lg:min-h-0 overflow-auto p-2.5 m-0 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words text-gray-800 dark:text-neutral-200">Run a query to see the response.</pre>
   </section>
 </main>
 
-<!-- ═══════ FOOTER ═══════ -->
-<footer class="border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+<!-- FOOTER — shrink-0, always visible at bottom -->
+<footer class="shrink-0 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
   <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex items-center justify-between gap-2 text-[10px] text-gray-500 dark:text-neutral-400">
     <span><i class="fa-solid fa-code mr-1"></i>apilayer proxy</span>
     <span class="flex items-center gap-2.5">
@@ -428,8 +426,7 @@ function populateEndpointSelect() {
   endpointSelect.innerHTML = "";
   for (const ep of cfg.endpoints || []) {
     const opt = document.createElement("option");
-    opt.value = ep.id;
-    opt.textContent = ep.label;
+    opt.value = ep.id; opt.textContent = ep.label;
     if (ep.id === currentEndpoint) opt.selected = true;
     endpointSelect.appendChild(opt);
   }
@@ -505,17 +502,14 @@ function rebuildForm() {
   for (const section of ep.sections) {
     const sec = document.createElement("div");
     sec.className = "space-y-1.5";
-
     const h = document.createElement("div");
     h.className = "text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400 border-b border-gray-200 dark:border-neutral-800 pb-1";
     h.textContent = section.title;
     sec.appendChild(h);
-
     const grid = document.createElement("div");
     grid.className = "grid grid-cols-1 sm:grid-cols-2 gap-1.5";
     for (const f of section.fields) grid.appendChild(buildField(f));
     sec.appendChild(grid);
-
     form.appendChild(sec);
   }
   updatePreview();
