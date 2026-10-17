@@ -71,7 +71,7 @@ function getSegments(req) {
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
   if (rejectMethod(req, res)) return;
-  if (requireKeyAuth(req, res)) return;
+  if (requireAuth(req, res)) return;
 
   const segments = getSegments(req);
   const endpoint = (segments[0] || "").toLowerCase();
