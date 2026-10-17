@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>apilayer Proxy Playground</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--border:#2a2f3a;--text:#e6e8ee;--muted:#8b93a3;--accent:#5b8cff;--ok:#4ade80;--err:#f87171}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0 0 4px;font-weight:600;flex-basis:100%}
+  .header-group{display:flex;flex-direction:column;gap:4px}
+  header label{margin:0;font-size:12px;color:var(--muted)}
+  .header-select{padding:8px 10px;background:#0c0e12;color:var(--text);border:1px solid var(--border);border-radius:6px;font:inherit;font-size:13px;min-width:250px}
+  .header-select:focus{outline:none;border-color:var(--accent)}
+  main{display:grid;grid-template-columns:400px 1fr;height:calc(100vh - 116px)}
+  @media(max-width:900px){main{grid-template-columns:1fr;height:auto}}
+  .left{overflow-y:auto;border-right:1px solid var(--border);padding:16px}
+  .right{overflow:hidden;display:flex;flex-direction:column;min-height:400px}
+  .section{margin-bottom:16px;padding:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+  .section h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input[type=text],input[type=number],input[type=date],select{width:100%;padding:8px 10px;background:#0c0e12;color:var(--text);border:1px solid var(--border);border-radius:6px;font:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .row{margin-bottom:10px}.row:last-child{margin-bottom:0}
+  .switch-row{display:flex;align-items:center;justify-content:space-between}
+  .switch-row label{margin:0}
+  .toggle{position:relative;width:36px;height:20px;background:#2a2f3a;border-radius:10px;cursor:pointer;transition:background .15s;flex-shrink:0}
+  .toggle input{position:absolute;opacity:0}
+  .toggle span{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .15s}
+  .toggle input:checked + span{transform:translateX(16px)}
+  .toggle:has(input:checked){background:var(--accent)}
+  .btn{padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .controls{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .url-preview{padding:8px 16px;font:12px/1.4 ui-monospace,monospace;color:var(--muted);border-bottom:1px solid var(--border);word-break:break-all}
+  .url-preview code{color:var(--text)}
+  .response-meta{display:flex;gap:16px;padding:10px 16px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap}
+  .status{font-weight:600}.status.ok{color:var(--ok)}.status.err{color:var(--err)}
+  pre.response{flex:1;overflow:auto;padding:16px;margin:0;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}
+  .hint{font-size:11px;color:var(--muted);margin-top:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>apilayer Proxy Playground</h1>
+  <div class="header-group">
+    <label for="apiSelect">API</label>
+    <select id="apiSelect" class="header-select"></select>
+  </div>
+  <div class="header-group">
+    <label for="endpointSelect">Endpoint</label>
+    <select id="endpointSelect" class="header-select"></select>
+  </div>
+</header>
+<main>
+  <div class="left" id="form"></div>
+  <div class="right">
+    <div class="controls">
+      <button class="btn" id="run">Run</button>
+      <button class="btn btn-secondary" id="reset">Reset</button>
+    </div>
+    <div class="url-preview" id="urlPreview"><code>—</code></div>
+    <div class="response-meta">
+      <span class="status" id="status">—</span>
+      <span id="time">—</span>
+      <span id="size">—</span>
+      <span id="cache">—</span>
+    </div>
+    <pre class="response" id="response">Run a query to see the response.</pre>
+  </div>
+</main>
+<script>
+const ALL_FILTERS = "name;capital;currencies";
+
+const APIS = {
+  aviationstack: {
+    label: "Aviationstack",
+    configured: true,
+    endpoints: [
+      { id: "flights", label: "GET /flights  —  Flights", base: "/api/aviationstack/flights",
+        sections: [
+          { title: "Flight filters", fields: [
+            { name:"flight_date",   label:"flight_date",   type:"date",   default:"" },
+            { name:"flight_status", label:"flight_status", type:"select", default:"",
+              values:["","scheduled","active","landed","cancelled","incident","diverted"] },
+            { name:"dep_iata",      label:"dep_iata",      type:"text", default:"", hint:"3-letter airport IATA." },
+            { name:"arr_iata",      label:"arr_iata",      type:"text", default:"", hint:"3-letter airport IATA." },
+            { name:"airline_name",  label:"airline_name",  type:"text", default:"" },
+            { name:"airline_iata",  label:"airline_iata",  type:"text", default:"", hint:"AA, BA, UA." },
+            { name:"flight_number", label:"flight_number", type:"text", default:"", hint:"Digits only." },
+          ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:100, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+      { id: "timetable", label: "GET /timetable  —  Timetable", base: "/api/aviationstack/timetable",
+        sections: [
+          { title: "Required", fields: [
+            { name:"iataCode", label:"iataCode *", type:"text", default:"JFK", hint:"3-letter airport IATA." },
+          ]},
+          { title: "Filters", fields: [
+            { name:"type", label:"type", type:"select", values:["arrival","departure"], default:"arrival" },
+            { name:"date", label:"date", type:"date", default:"" },
+          ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:100, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+      { id: "airports",  label: "GET /airports  —  Airports",  base: "/api/aviationstack/airports",
+        sections: [
+          { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:100, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+      { id: "airlines",  label: "GET /airlines  —  Airlines",  base: "/api/aviationstack/airlines",
+        sections: [
+          { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:100, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+      { id: "routes",    label: "GET /routes  —  Routes",      base: "/api/aviationstack/routes",
+        sections: [
+          { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:100, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+      { id: "airplanes", label: "GET /airplanes  —  Airplanes", base: "/api/aviationstack/airplanes",
+        sections: [
+          { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:100, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+    ],
+  },
+
+  countrylayer: {
+    label: "Countrylayer",
+    configured: true,
+    endpoints: [
+      { id: "all", label: "GET /all  —  All Countries", base: "/api/countrylayer",
+        sections: [
+          { title: "Query", fields: [
+            { name:"filters", label:"filters", type:"text", default: ALL_FILTERS, hint:"Semicolon- or comma-separated." },
+          ]},
+        ]},
+      { id: "name", label: "GET /name/{name}  —  Name", base: "/api/countrylayer/name", pathField: "value",
+        sections: [
+          { title: "Required", fields: [
+            { name:"value", label:"name *", type:"text", default:"france" },
+          ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "capital", label: "GET /capital/{capital}  —  Capital", base: "/api/countrylayer/capital", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"capital *", type:"text", default:"paris" } ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "language", label: "GET /language/{language}  —  Language", base: "/api/countrylayer/language", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"language *", type:"text", default:"spanish" } ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "currency", label: "GET /currency/{currency}  —  Currency", base: "/api/countrylayer/currency", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"currency *", type:"text", default:"eur", hint:"ISO 4217." } ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "region", label: "GET /region/{region}  —  Region", base: "/api/countrylayer/region", pathField: "value",
+        sections: [
+          { title: "Required", fields: [
+            { name:"value", label:"region *", type:"select", default:"Europe",
+              values:["Africa","Americas","Asia","Europe","Oceania","Antarctic"] },
+          ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "regionalbloc", label: "GET /regionalbloc/{regionalbloc}  —  Region Block", base: "/api/countrylayer/regionalbloc", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"regional bloc *", type:"text", default:"eu", hint:"EU, NAFTA, AU, ASEAN." } ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "callingcode", label: "GET /callingcode/{callingcode}  —  Calling Code", base: "/api/countrylayer/callingcode", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"calling code *", type:"text", default:"1", hint:"1, 44, 33." } ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+      { id: "alpha", label: "GET /alpha/{code}  —  Alpha Code", base: "/api/countrylayer/alpha", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"alpha code *", type:"text", default:"fr", hint:"2- or 3-letter." } ]},
+          { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
+        ]},
+    ],
+  },
+
+  ipstack: {
+    label: "IPstack",
+    configured: true,
+    endpoints: [
+      { id: "check", label: "GET /check  —  Plan Check", base: "/api/ipstack/check", sections: [] },
+      { id: "lookup", label: "GET /lookup/{ip}  —  Lookup IP", base: "/api/ipstack/lookup", pathField: "value",
+        sections: [
+          { title: "Required", fields: [ { name:"value", label:"ip *", type:"text", default:"8.8.8.8", hint:"IPv4 or IPv6." } ]},
+          { title: "Options", fields: [
+            { name:"fields",   label:"fields",   type:"text",   default:"" },
+            { name:"hostname", label:"hostname", type:"toggle", default:"0" },
+            { name:"security", label:"security", type:"toggle", default:"0" },
+            { name:"language", label:"language", type:"text",   default:"" },
+          ]},
+        ]},
+      { id: "standard", label: "GET /standard  —  Caller IP", base: "/api/ipstack/standard",
+        sections: [
+          { title: "Options", fields: [
+            { name:"fields",   label:"fields",   type:"text",   default:"" },
+            { name:"hostname", label:"hostname", type:"toggle", default:"0" },
+            { name:"security", label:"security", type:"toggle", default:"0" },
+            { name:"language", label:"language", type:"text",   default:"" },
+          ]},
+        ]},
+      { id: "bulk", label: "GET /bulk  —  Bulk Lookup", base: "/api/ipstack/bulk",
+        sections: [
+          { title: "Required", fields: [
+            { name:"ips", label:"ips *", type:"text", default:"8.8.8.8,1.1.1.1", hint:"Comma-separated." },
+          ]},
+          { title: "Options", fields: [
+            { name:"fields",   label:"fields",   type:"text",   default:"" },
+            { name:"hostname", label:"hostname", type:"toggle", default:"0" },
+            { name:"security", label:"security", type:"toggle", default:"0" },
+          ]},
+        ]},
+    ],
+  },
+
+  mailboxlayer: { label: "Mailboxlayer", configured: false },
+  marketstack:  { label: "Marketstack",  configured: false },
+
+  mediastack: {
+    label: "Mediastack",
+    configured: true,
+    endpoints: [
+      { id: "sources", label: "GET /sources  —  Sources", base: "/api/mediastack/sources",
+        sections: [
+          { title: "Search", fields: [
+            { name:"search", label:"search", type:"text", default:"bbc" },
+          ]},
+          { title: "Filters", fields: [
+            { name:"countries",  label:"countries",  type:"text", default:"us,gb" },
+            { name:"languages",  label:"languages",  type:"text", default:"en" },
+            { name:"categories", label:"categories", type:"text", default:"business" },
+          ]},
+          { title: "Pagination", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:25, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+      { id: "news", label: "GET /news  —  News", base: "/api/mediastack/news",
+        sections: [
+          { title: "Search", fields: [
+            { name:"keywords", label:"keywords", type:"text", default:"bitcoin" },
+            { name:"sources",  label:"sources",  type:"text", default:"bbc,cnn" },
+          ]},
+          { title: "Filters", fields: [
+            { name:"countries",  label:"countries",  type:"text", default:"us" },
+            { name:"languages",  label:"languages",  type:"text", default:"en" },
+            { name:"categories", label:"categories", type:"text", default:"business" },
+            { name:"date",       label:"date",       type:"text", default:"", hint:"YYYY-MM-DD or YYYY-MM-DD,YYYY-MM-DD." },
+          ]},
+          { title: "Sorting & pagination", fields: [
+            { name:"sort",   label:"sort",   type:"select", default:"published_at", values:["published_at","-published_at"] },
+            { name:"limit",  label:"limit",  type:"number", default:25, min:1, max:100 },
+            { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
+          ]},
+        ]},
+    ],
+  },
+
+  numverify: {
+    label: "Numverify",
+    configured: true,
+    endpoints: [
+      { id: "countries", label: "GET /countries  —  Countries", base: "/api/numverify/countries", sections: [] },
+      { id: "validate", label: "GET /validate  —  Validate Number", base: "/api/numverify/validate",
+        sections: [
+          { title: "Required", fields: [
+            { name:"number", label:"number *", type:"text", default:"14158586273",
+              hint:"Full international number incl. country prefix (e.g. 14158586273)." },
+          ]},
+          { title: "Options", fields: [
+            { name:"country_code", label:"country_code", type:"text", default:"", hint:"Optional 2-letter ISO code." },
+            { name:"format",       label:"format",       type:"toggle", default:"0" },
+          ]},
+        ]},
+    ],
+  },
+
+  positionstack: { label: "Positionstack", configured: false },
+  scrapestack:   { label: "Scrapestack",   configured: false },
+
+  serpstack: {
+    label: "Serpstack",
+    configured: true,
+    endpoints: [
+      { id: "search", label: "GET /search  —  Search", base: "/api/serpstack/search",
+        sections: [
+          { title: "Required", fields: [
+            { name:"query", label:"query *", type:"text", default:"mcdonalds" },
+          ]},
+          { title: "Search basics", fields: [
+            { name:"engine",   label:"engine",   type:"select", values:["google"], default:"google" },
+            { name:"type",     label:"type",     type:"select", values:["web","images","videos","news","shopping"], default:"web" },
+            { name:"device",   label:"device",   type:"select", values:["desktop","mobile","tablet"], default:"desktop" },
+            { name:"location", label:"location", type:"text",   default:"New York,New York,United States" },
+          ]},
+          { title: "Localization", fields: [
+            { name:"auto_location", label:"auto_location", type:"toggle", default:"1" },
+            { name:"google_domain", label:"google_domain", type:"text",   default:"google.com" },
+            { name:"gl",            label:"gl",            type:"text",   default:"us" },
+            { name:"hl",            label:"hl",            type:"text",   default:"en" },
+            { name:"safe",          label:"safe",          type:"toggle", default:"0" },
+          ]},
+          { title: "Time period", fields: [
+            { name:"period",       label:"period",       type:"select", default:"last_week",
+              values:["last_hour","last_day","last_week","last_month","last_year","custom"] },
+            { name:"period_start", label:"period_start", type:"date", default:"2023-01-01" },
+            { name:"period_end",   label:"period_end",   type:"date", default:"2023-01-31" },
+          ]},
+          { title: "News", fields: [
+            { name:"news_type", label:"news_type", type:"text", default:"blogs" },
+            { name:"exclude_autocorrected_results", label:"exclude_autocorrected_results", type:"toggle", default:"0" },
+          ]},
+          { title: "Images", fields: [
+            { name:"images_page",  label:"images_page",  type:"number", default:1, min:1 },
+            { name:"images_color", label:"images_color", type:"select", default:"any",
+              values:["any","black_and_white","transparent","red","orange","yellow","green","teal","blue","purple","pink","white","gray","black","brown"] },
+            { name:"images_size",  label:"images_size",  type:"select", values:["large","medium","icon"], default:"large" },
+            { name:"images_type",  label:"images_type",  type:"select", values:["clipart","line_drawing","gif"], default:"clipart" },
+            { name:"images_usage", label:"images_usage", type:"select", default:"reuse",
+              values:["reuse_with_modification","reuse","non_commercial_reuse_with_modification","non_commercial_reuse"] },
+          ]},
+          { title: "Filters", fields: [
+            { name:"sort", label:"sort", type:"select", values:["relevance","date"], default:"relevance" },
+            { name:"page", label:"page", type:"number", default:1, min:1, max:10 },
+          ]},
+          { title: "Output", fields: [
+            { name:"output",     label:"output",     type:"select", values:["json","csv"], default:"json" },
+            { name:"csv_fields", label:"csv_fields", type:"text",   default:"search_parameters.query,organic_results.title" },
+          ]},
+        ]},
+      { id: "locations", label: "GET /locations  —  Locations", base: "/api/serpstack/locations",
+        sections: [
+          { title: "Search", fields: [
+            { name:"location", label:"location", type:"text", default:"New York" },
+          ]},
+          { title: "Filters", fields: [
+            { name:"region",  label:"region",  type:"text", default:"" },
+            { name:"country", label:"country", type:"text", default:"" },
+          ]},
+          { title: "Options", fields: [
+            { name:"limit",  label:"limit",  type:"number", default:10, min:1, max:100 },
+            { name:"output", label:"output", type:"select", values:["json"], default:"json" },
+          ]},
+        ]},
+    ],
+  },
+};
+
+const API_ORDER = [
+  "aviationstack","countrylayer","ipstack","mailboxlayer","marketstack",
+  "mediastack","numverify","positionstack","scrapestack","serpstack",
+];
+
+let currentApi = "serpstack";
+let currentEndpoint = "search";
+
+const $ = id => document.getElementById(id);
+const form           = $("form");
+const apiSelect      = $("apiSelect");
+const endpointSelect = $("endpointSelect");
+const runBtn         = $("run");
+const resetBtn       = $("reset");
+const urlPreview     = $("urlPreview");
+const statusEl       = $("status");
+const timeEl         = $("time");
+const sizeEl         = $("size");
+const cacheEl        = $("cache");
+const responseEl     = $("response");
+
+const getApiCfg = () => APIS[currentApi];
+const getEndpointCfg = () =>
+  (getApiCfg().endpoints || []).find(e => e.id === currentEndpoint) || getenvApiCfg().endpoints[0];
+
+function populateApiSelect().example {
+  apiSelect.innerHTML = "";
+  for`, (const key of API_ORDER) {
+    const cfg = APIS[key];
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = cfg `..configured ? cfg.label : `${cfg.label} (not configuredgit)`;
+    if (!cfg.configured) opt.disabled = true;
+    if (key === currentApi) opt.selected = true;
+    apiSelect.appendChild(opt);
+  }
+}
+
+function populateEndpointSelect() {
+  const cfg = getApiCfg();
+  endpointSelect.innerHTML = "";
+  for (const ep of cfg.endpoints || []) {
+    const opt = document.createElement("option");
+    opt.value = ep.id; opt.textContent = ep.label;
+    if (ep.id === currentEndpoint) opt.selected = true;
+    endpointSelect.appendChild(opt);
+  }
+  endpointSelect.disabled = (cfg.endpoints || []).length <= 1;
+}
+
+function buildField(f) {
+  const row = document.createElement("div");
+  row.className = "row";
+  if (f.type === "toggle") {
+    row.classList.add("switch-row");
+    const lbl = document.createElement("label");
+    lbl.textContent = f.label; lbl.htmlFor = `p-${f.name}`;
+    const toggle = document.createElement("label");
+    toggle.className = "toggle";
+    toggle.innerHTML = `<input type="checkbox" id="p-${f.name}" ${f.default === "1" ? "checked" : ""}><span></span>`;
+    row.append(lbl, toggle);
+  } else if (f.type === "select") {
+    const lbl = document.createElement("label");
+    lbl.textContent = f.label; lbl.htmlFor = `p-${f.name}`;
+    const sel = document.createElement("select");
+    sel.id = `p-${f.name}`;
+    for (const v of f.values) {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = v || "(none)";
+      if (v === f.default) o.selected = true;
+      sel.appendChild(o);
+    }
+    row.append(lbl, sel);
+  } else {
+    const lbl = document.createElement("label");
+    lbl.textContent = f.label; lbl.htmlFor = `p-${f.name}`;
+    const inp = document.createElement("input");
+    inp.type = f.type === "number" ? "number" : f.type === "date" ? "date" : "text";
+    inp.id = `p-${f.name}`;
+    inp.value = f.default ?? "";
+    if (f.min !== undefined) inp.min = f.min;
+    if (f.max !== undefined) inp.max = f.max;
+    row.append(lbl, inp);
+  }
+  if (f.hint) {
+    const hint = document.createElement("div");
+    hint.className = "hint"; hint.textContent = f.hint;
+    row.appendChild(hint);
+  }
+  return row;
+}
+
+function rebuildForm() {
+  form.innerHTML = "";
+  const ep = getEndpointCfg();
+  for (const section of ep.sections || []) {
+    const sec = document.createElement("div");
+    sec.className = "section";
+    const h = document.createElement("h3");
+    h.textContent = section.title;
+    sec.appendChild(h);
+    for (const f of section.fields) sec.appendChild(buildField(f));
+    form.appendChild(sec);
+  }
+  updatePreview();
+}
+
+function collectParams() {
+  const ep = getEndpointCfg();
+  const skipName = ep.pathField;
+  const params = new URLSearchParams();
+  for (const section of ep.sections || []) {
+    for (const f of section.fields) {
+      if (f.name === skipName) continue;
+      const node = document.getElementById(`p-${f.name}`);
+      if (!node) continue;
+      const val = f.type === "toggle"
+        ? (node.checked ? "1" : "0")
+        : String(node.value ?? "").trim();
+      if (val === "") continue;
+      if (String(f.default ?? "") === val) continue;
+      params.set(f.name, val);
+    }
+  }
+  return params;
+}
+
+function buildUrl() {
+  const ep = getEndpointCfg();
+  let base = ep.base;
+  if (ep.pathField) {
+    const node = document.getElementById(`p-${ep.pathField}`);
+    const val = node ? String(node.value ?? "").trim() : "";
+    if (val) base += "/" + encodeURIComponent(val);
+  }
+  const qs = collectParams().toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+function updatePreview() {
+  urlPreview.innerHTML = "";
+  const code = document.createElement("code");
+  code.textContent = buildUrl();
+  urlPreview.appendChild(code);
+}
+
+function resetForm() {
+  const ep = getEndpointCfg();
+  for (const section of ep.sections || []) for (const f of section.fields) {
+    const node = document.getElementById(`p-${f.name}`);
+    if (!node) continue;
+    if (f.type === "toggle") node.checked = f.default === "1";
+    else node.value = f.default ?? "";
+  }
+  updatePreview();
+  resetResponse();
+}
+
+function resetResponse() {
+  statusEl.textContent = "—"; statusEl.className = "status";
+  timeEl.textContent = sizeEl.textContent = cacheEl.textContent = "—";
+  responseEl.textContent = "Run a query to see the response.";
+}
+
+async function run() {
+  const url = buildUrl();
+  runBtn.disabled = true;
+  statusEl.textContent = "loading…"; statusEl.className = "status";
+  timeEl.textContent = sizeEl.textContent = cacheEl.textContent = "—";
+  responseEl.textContent = "";
+  const t0 = performance.now();
+  try {
+    const res  = await fetch(url, { headers: { Accept: "*/*" } });
+    const ms   = Math.round(performance.now() - t0);
+    const text = await res.text();
+    timeEl.textContent  = `${ms} ms`;
+    sizeEl.textContent  = `${(new Blob([text]).size / 1024).toFixed(1)} KB`;
+    cacheEl.textContent = `cache: ${res.headers.get("X-Cache") || "—"}`;
+    statusEl.textContent = `${res.status} ${res.statusText || ""}`.trim();
+    statusEl.className   = "status " + (res.ok ? "ok" : "err");
+    if (/json/i.test(res.headers.get("content-type") || "")) {
+      try { responseEl.textContent = JSON.stringify(JSON.parse(text), null, 2); }
+      catch { responseEl.textContent = text; }
+    } else {
+      responseEl.textContent = text;
+    }
+  } catch (e) {
+    statusEl.textContent = "network error"; statusEl.className = "status err";
+    responseEl.textContent = String(e);
+  } finally {
+    runBtn.disabled = false;
+  }
+}
+
+function selectApi(apiKey) {
+  const cfg = APIS[apiKey];
+  if (!cfg || !cfg.configured) return;
+  currentApi = apiKey;
+  currentEndpoint = cfg.endpoints[0].id;
+  populateEndpointSelect();
+  rebuildForm();
+  resetResponse();
+}
+
+function selectEndpoint(epId) {
+  const cfg = getApiCfg();
+  const ep = (cfg.endpoints || []).find(e => e.id === epId);
+  if (!ep) return;
+  currentEndpoint = ep.id;
+  rebuildForm();
+  resetResponse();
+}
+
+apiSelect.addEventListener("change",      () => selectApi(apiSelect.value));
+endpointSelect.addEventListener("change", () => selectEndpoint(endpointSelect.value));
+form.addEventListener("input",  updatePreview);
+form.addEventListener("change", updatePreview);
+runBtn.addEventListener("click", run);
+resetBtn.addEventListener("click", resetForm);
+
+populateApiSelect();
+populateEndpointSelect();
+rebuildForm();
+resetResponse();
+</script>
+</body>
+</html>
