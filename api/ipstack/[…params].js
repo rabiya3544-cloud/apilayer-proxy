@@ -26,12 +26,21 @@ const SCHEMAS = {
 const NAMED_ENDPOINTS = new Set(["check", "standard", "bulk", "lookup"]);
 const cache = createCache(200);
 
+function getSegments(req) {
+  const raw = req.query.params;
+  if (Array.isArray(raw) && raw.length) return raw;
+  if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
+  const urlPath = String(req.url || "").split("?")[0];
+  const parts = urlPath.split("/").filter(Boolean);
+  return parts.length > 2 ? parts.slice(2) : [];
+}
+
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
   if (rejectMethod(req, res)) return;
   if (requireKey(res)) return;
 
-  const segments = Array.isArray(rawParams) ? rawParams : typeof rawParams === "string" ? rawParams.split("/").filter(Boolean) : [];
+  const segments = getSegments(req);
   const first = (segments[0] || "").toLowerCase();
 
   let endpoint, ipValue = "";
@@ -40,7 +49,12 @@ export default async function handler(req, res) {
   else                                 { endpoint = "lookup"; ipValue = first; }
 
   const schema = SCHEMAS[endpoint];
-  if (!schema) return sendError(res, 400, "Unknown endpoint", Object.keys(SCHEMAS));
+  if (!schema) {
+    return sendError(res, 400, "Unknown endpoint", {
+      allowed: Object.keys(SCHEMAS),
+      debug: { url: req.url, queryKeys: Object.keys(req.query), segments },
+    });
+  }
   if (endpoint === "lookup" && !ipValue) return sendError(res, 400, "lookup requires an IP, e.g. /api/ipstack/lookup/8.8.8.8");
 
   const { out: params, errors } = coerceParams(req.query, schema);
