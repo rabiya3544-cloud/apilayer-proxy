@@ -107,8 +107,14 @@ export default async function handler(req, res) {
 
   try {
     const search = new URLSearchParams();
-    search.set("access_key", apiKey());
-    for (const [k, v] of Object.entries(params)) search.set(k, v);
+search.set("access_key", apiKey());
+// Only send params that differ from defaults — smaller request = faster upstream.
+for (const [k, v] of Object.entries(params)) {
+  const schema = SCHEMAS[endpoint];
+  const rule = schema?.[k];
+  if (rule && rule.default !== undefined && String(rule.default) === String(v)) continue;
+  search.set(k, v);
+}
 
     const controller = new AbortController();
 const timer = setTimeout(() => controller.abort(), 8000);
