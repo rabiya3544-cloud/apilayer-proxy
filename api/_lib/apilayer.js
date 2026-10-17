@@ -39,9 +39,16 @@ export function rejectMethod(req, res) {
   return false;
 }
 
-export function requireKey(res) {
-  if (!apiKey()) {
+export function requireAuth(req, res) {
+  const expected = apiKey();
+  if (!expected) {
     res.status(500).json({ error: "Server misconfigured: APILAYER_API_KEY not set." });
+    return true;
+  }
+  const auth = String(req.headers["authorization"] || "");
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  if (!token || token !== expected) {
+    res.status(401).json({ error: "Unauthorized. Send header: Authorization: Bearer <apilayer-key>" });
     return true;
   }
   return false;
