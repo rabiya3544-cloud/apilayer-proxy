@@ -27,6 +27,9 @@ const NAMED_ENDPOINTS = new Set(["check", "standard", "bulk", "lookup"]);
 const cache = createCache(200);
 
 function getSegments(req) {
+  if (typeof req.query.path === "string" && req.query.path) {
+    return req.query.path.split("/").filter(Boolean);
+  }
   const raw = req.query.params;
   if (Array.isArray(raw) && raw.length) return raw;
   if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
