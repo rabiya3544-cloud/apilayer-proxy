@@ -9,31 +9,37 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <script>
   tailwind.config = { darkMode: "class" };
-  // Apply theme before first paint to avoid flash-of-wrong-theme.
   (function () {
     var stored = localStorage.getItem("apilayer-theme");
     var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    var isDark = theme === "dark";
+    document.documentElement.classList.toggle("dark", isDark);
     document.documentElement.dataset.theme = theme;
-    document.getElementById("themeColorMeta").content = theme === "dark" ? "#171717" : "#ffffff";
+    var meta = document.getElementById("themeColorMeta");
+    if (meta) meta.content = isDark ? "#171717" : "#ffffff";
   })();
 </script>
 <style>
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; color-scheme: light; }
+  html.dark { color-scheme: dark; }
   body { -webkit-tap-highlight-color: transparent; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(120,120,140,.35); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(120,120,140,.55); }
   select { -webkit-appearance: none; appearance: none; background-image: none; }
-  input[type=date] { min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; color-scheme: light dark; }
+  input[type=date] { min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; }
   input[type=date]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .6; }
   input[type=date]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+  /* Icon swap via CSS — no JS needed */
+  #themeToggle .icon-sun { display: none; }
+  #themeToggle .icon-moon { display: inline-block; }
+  html.dark #themeToggle .icon-sun { display: inline-block; }
+  html.dark #themeToggle .icon-moon { display: none; }
 </style>
 </head>
 <body class="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 antialiased text-[13px]">
 
-<!-- HEADER -->
 <header class="shrink-0 z-20 border-b border-gray-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md">
   <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex items-center gap-1.5 flex-wrap">
     <div class="order-1 flex items-center gap-1.5 shrink-0">
@@ -43,29 +49,29 @@
 
     <button id="themeToggle" type="button" aria-label="Toggle theme" title="Toggle theme"
       class="order-2 sm:order-3 ml-auto shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 text-gray-600 dark:text-neutral-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40">
-      <i class="fa-solid fa-moon text-[11px]"></i>
+      <i class="fa-solid fa-moon text-[11px] icon-moon"></i>
+      <i class="fa-solid fa-sun text-[11px] icon-sun"></i>
     </button>
 
     <div class="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 sm:max-w-lg grid grid-cols-2 gap-1.5">
       <label class="flex flex-col gap-0.5 min-w-0">
-        <span class="text-[9px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400">API</span>
+        <span class="text-[9px] uppercase tracking-wider font-semibold text-gray-700 dark:text-neutral-400">API</span>
         <select id="apiSelect" class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"></select>
       </label>
       <label class="flex flex-col gap-0.5 min-w-0">
-        <span class="text-[9px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400">Endpoint</span>
+        <span class="text-[9px] uppercase tracking-wider font-semibold text-gray-700 dark:text-neutral-400">Endpoint</span>
         <select id="endpointSelect" class="w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 disabled:opacity-50"></select>
       </label>
     </div>
   </div>
 </header>
 
-<!-- MAIN -->
 <main class="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-2 grid grid-cols-1 gap-2 content-start lg:content-stretch lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:p-3">
 
   <section class="flex flex-col rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden lg:min-h-0">
     <div class="px-2.5 py-1.5 border-b border-gray-200 dark:border-neutral-800 flex items-center gap-1.5 shrink-0">
       <i class="fa-solid fa-sliders text-[10px] text-gray-400 dark:text-neutral-500"></i>
-      <span class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400">Parameters</span>
+      <span class="text-[10px] uppercase tracking-wider font-semibold text-gray-700 dark:text-neutral-400">Parameters</span>
     </div>
     <div id="form" class="p-2 space-y-2 overflow-y-auto overflow-x-hidden grow min-h-0"></div>
     <div class="px-2 py-1.5 border-t border-gray-200 dark:border-neutral-800 flex gap-1.5 shrink-0">
@@ -83,18 +89,17 @@
       <code id="urlPreview" class="text-[11px] font-mono text-gray-600 dark:text-neutral-400 break-all leading-snug">—</code>
     </div>
     <div class="px-2.5 py-1 border-b border-gray-200 dark:border-neutral-800 flex items-center gap-3 text-[11px] flex-wrap shrink-0">
-      <span id="status" class="font-semibold text-gray-500 dark:text-neutral-400">—</span>
-      <span id="time" class="text-gray-500 dark:text-neutral-400"><i class="fa-regular fa-clock mr-1 text-[10px]"></i>—</span>
-      <span id="size" class="text-gray-500 dark:text-neutral-400"><i class="fa-solid fa-database mr-1 text-[10px]"></i>—</span>
-      <span id="cache" class="text-gray-500 dark:text-neutral-400"><i class="fa-solid fa-bolt mr-1 text-[10px]"></i>—</span>
+      <span id="status" class="font-semibold text-gray-700 dark:text-neutral-400">—</span>
+      <span id="time" class="text-gray-700 dark:text-neutral-400"><i class="fa-regular fa-clock mr-1 text-[10px]"></i>—</span>
+      <span id="size" class="text-gray-700 dark:text-neutral-400"><i class="fa-solid fa-database mr-1 text-[10px]"></i>—</span>
+      <span id="cache" class="text-gray-700 dark:text-neutral-400"><i class="fa-solid fa-bolt mr-1 text-[10px]"></i>—</span>
     </div>
     <pre id="response" class="flex-1 min-h-[120px] lg:min-h-0 overflow-auto p-2.5 m-0 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words text-gray-800 dark:text-neutral-200">Run a query to see the response.</pre>
   </section>
 </main>
 
-<!-- FOOTER -->
 <footer class="shrink-0 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-  <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex items-center justify-between gap-2 text-[10px] text-gray-500 dark:text-neutral-400">
+  <div class="mx-auto max-w-7xl px-2.5 py-1.5 flex items-center justify-between gap-2 text-[10px] text-gray-700 dark:text-neutral-400">
     <span><i class="fa-solid fa-code mr-1"></i>apilayer proxy</span>
     <span class="flex items-center gap-2.5">
       <span class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-blue-500"></i> CORS</span>
@@ -106,12 +111,13 @@
 
 <script>
 const ALL_FILTERS = "name;capital;currencies";
+const proxyBase = "https://apilayer-proxy-steel.vercel.app/api";
 
 const APIS = {
   aviationstack: {
     label: "Aviationstack", configured: true,
     endpoints: [
-      { id: "flights", label: "GET /flights  —  Flights", base: "/api/aviationstack/flights",
+      { id: "flights", label: "GET /flights  —  Flights", base: proxyBase + "/aviationstack/flights",
         sections: [
           { title: "Flight filters", fields: [
             { name:"flight_date",   label:"flight_date",   type:"date",   default:"" },
@@ -128,7 +134,7 @@ const APIS = {
             { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
           ]},
         ]},
-      { id: "timetable", label: "GET /timetable  —  Timetable", base: "/api/aviationstack/timetable",
+      { id: "timetable", label: "GET /timetable  —  Timetable", base: proxyBase + "/aviationstack/timetable",
         sections: [
           { title: "Required", fields: [
             { name:"iataCode", label:"iataCode *", type:"text", default:"JFK", hint:"3-letter airport IATA." },
@@ -142,7 +148,7 @@ const APIS = {
             { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
           ]},
         ]},
-      { id: "airports",  label: "GET /airports  —  Airports",  base: "/api/aviationstack/airports",
+      { id: "airports",  label: "GET /airports  —  Airports",  base: proxyBase + "/aviationstack/airports",
         sections: [
           { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
           { title: "Pagination", fields: [
@@ -150,7 +156,7 @@ const APIS = {
             { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
           ]},
         ]},
-      { id: "airlines",  label: "GET /airlines  —  Airlines",  base: "/api/aviationstack/airlines",
+      { id: "airlines",  label: "GET /airlines  —  Airlines",  base: proxyBase + "/aviationstack/airlines",
         sections: [
           { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
           { title: "Pagination", fields: [
@@ -158,7 +164,7 @@ const APIS = {
             { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
           ]},
         ]},
-      { id: "routes",    label: "GET /routes  —  Routes",      base: "/api/aviationstack/routes",
+      { id: "routes",    label: "GET /routes  —  Routes",      base: proxyBase + "/aviationstack/routes",
         sections: [
           { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
           { title: "Pagination", fields: [
@@ -166,7 +172,7 @@ const APIS = {
             { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
           ]},
         ]},
-      { id: "airplanes", label: "GET /airplanes  —  Airplanes", base: "/api/aviationstack/airplanes",
+      { id: "airplanes", label: "GET /airplanes  —  Airplanes", base: proxyBase + "/aviationstack/airplanes",
         sections: [
           { title: "Filters", fields: [ { name:"search", label:"search", type:"text", default:"" } ]},
           { title: "Pagination", fields: [
@@ -180,33 +186,33 @@ const APIS = {
   countrylayer: {
     label: "Countrylayer", configured: true,
     endpoints: [
-      { id: "all", label: "GET /all  —  All Countries", base: "/api/countrylayer/all",
+      { id: "all", label: "GET /all  —  All Countries", base: proxyBase + "/countrylayer/all",
         sections: [
           { title: "Query", fields: [
             { name:"filters", label:"filters", type:"text", default: ALL_FILTERS, hint:"Semicolon- or comma-separated." },
           ]},
         ]},
-      { id: "name", label: "GET /name/{name}  —  Name", base: "/api/countrylayer/name", pathField: "value",
+      { id: "name", label: "GET /name/{name}  —  Name", base: proxyBase + "/countrylayer/name", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"name *", type:"text", default:"france" } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "capital", label: "GET /capital/{capital}  —  Capital", base: "/api/countrylayer/capital", pathField: "value",
+      { id: "capital", label: "GET /capital/{capital}  —  Capital", base: proxyBase + "/countrylayer/capital", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"capital *", type:"text", default:"paris" } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "language", label: "GET /language/{language}  —  Language", base: "/api/countrylayer/language", pathField: "value",
+      { id: "language", label: "GET /language/{language}  —  Language", base: proxyBase + "/countrylayer/language", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"language *", type:"text", default:"spanish" } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "currency", label: "GET /currency/{currency}  —  Currency", base: "/api/countrylayer/currency", pathField: "value",
+      { id: "currency", label: "GET /currency/{currency}  —  Currency", base: proxyBase + "/countrylayer/currency", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"currency *", type:"text", default:"eur", hint:"ISO 4217." } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "region", label: "GET /region/{region}  —  Region", base: "/api/countrylayer/region", pathField: "value",
+      { id: "region", label: "GET /region/{region}  —  Region", base: proxyBase + "/countrylayer/region", pathField: "value",
         sections: [
           { title: "Required", fields: [
             { name:"value", label:"region *", type:"select", default:"Europe",
@@ -214,17 +220,17 @@ const APIS = {
           ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "regionalbloc", label: "GET /regionalbloc/{regionalbloc}  —  Region Block", base: "/api/countrylayer/regionalbloc", pathField: "value",
+      { id: "regionalbloc", label: "GET /regionalbloc/{regionalbloc}  —  Region Block", base: proxyBase + "/countrylayer/regionalbloc", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"regional bloc *", type:"text", default:"eu", hint:"EU, NAFTA, AU, ASEAN." } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "callingcode", label: "GET /callingcode/{callingcode}  —  Calling Code", base: "/api/countrylayer/callingcode", pathField: "value",
+      { id: "callingcode", label: "GET /callingcode/{callingcode}  —  Calling Code", base: proxyBase + "/countrylayer/callingcode", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"calling code *", type:"text", default:"1", hint:"1, 44, 33." } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
         ]},
-      { id: "alpha", label: "GET /alpha/{code}  —  Alpha Code", base: "/api/countrylayer/alpha", pathField: "value",
+      { id: "alpha", label: "GET /alpha/{code}  —  Alpha Code", base: proxyBase + "/countrylayer/alpha", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"alpha code *", type:"text", default:"fr", hint:"2- or 3-letter." } ]},
           { title: "Query", fields: [ { name:"filters", label:"filters", type:"text", default: ALL_FILTERS } ]},
@@ -235,8 +241,8 @@ const APIS = {
   ipstack: {
     label: "IPstack", configured: true,
     endpoints: [
-      { id: "check", label: "GET /check  —  Plan Check", base: "/api/ipstack/check", sections: [] },
-      { id: "lookup", label: "GET /lookup/{ip}  —  Lookup IP", base: "/api/ipstack/lookup", pathField: "value",
+      { id: "check", label: "GET /check  —  Plan Check", base: proxyBase + "/ipstack/check", sections: [] },
+      { id: "lookup", label: "GET /lookup/{ip}  —  Lookup IP", base: proxyBase + "/ipstack/lookup", pathField: "value",
         sections: [
           { title: "Required", fields: [ { name:"value", label:"ip *", type:"text", default:"8.8.8.8", hint:"IPv4 or IPv6." } ]},
           { title: "Options", fields: [
@@ -246,7 +252,7 @@ const APIS = {
             { name:"language", label:"language", type:"text",   default:"" },
           ]},
         ]},
-      { id: "standard", label: "GET /standard  —  Caller IP", base: "/api/ipstack/standard",
+      { id: "standard", label: "GET /standard  —  Caller IP", base: proxyBase + "/ipstack/standard",
         sections: [
           { title: "Options", fields: [
             { name:"fields",   label:"fields",   type:"text",   default:"" },
@@ -255,7 +261,7 @@ const APIS = {
             { name:"language", label:"language", type:"text",   default:"" },
           ]},
         ]},
-      { id: "bulk", label: "GET /bulk  —  Bulk Lookup", base: "/api/ipstack/bulk",
+      { id: "bulk", label: "GET /bulk  —  Bulk Lookup", base: proxyBase + "/ipstack/bulk",
         sections: [
           { title: "Required", fields: [
             { name:"ips", label:"ips *", type:"text", default:"8.8.8.8,1.1.1.1", hint:"Comma-separated." },
@@ -275,7 +281,7 @@ const APIS = {
   mediastack: {
     label: "Mediastack", configured: true,
     endpoints: [
-      { id: "sources", label: "GET /sources  —  Sources", base: "/api/mediastack/sources",
+      { id: "sources", label: "GET /sources  —  Sources", base: proxyBase + "/mediastack/sources",
         sections: [
           { title: "Search", fields: [ { name:"search", label:"search", type:"text", default:"bbc" } ]},
           { title: "Filters", fields: [
@@ -288,7 +294,7 @@ const APIS = {
             { name:"offset", label:"offset", type:"number", default:0, min:0, max:10000 },
           ]},
         ]},
-      { id: "news", label: "GET /news  —  News", base: "/api/mediastack/news",
+      { id: "news", label: "GET /news  —  News", base: proxyBase + "/mediastack/news",
         sections: [
           { title: "Search", fields: [
             { name:"keywords", label:"keywords", type:"text", default:"bitcoin" },
@@ -312,8 +318,8 @@ const APIS = {
   numverify: {
     label: "Numverify", configured: true,
     endpoints: [
-      { id: "countries", label: "GET /countries  —  Countries", base: "/api/numverify/countries", sections: [] },
-      { id: "validate", label: "GET /validate  —  Validate Number", base: "/api/numverify/validate",
+      { id: "countries", label: "GET /countries  —  Countries", base: proxyBase + "/numverify/countries", sections: [] },
+      { id: "validate", label: "GET /validate  —  Validate Number", base: proxyBase + "/numverify/validate",
         sections: [
           { title: "Required", fields: [
             { name:"number", label:"number *", type:"text", default:"14158586273",
@@ -333,7 +339,7 @@ const APIS = {
   serpstack: {
     label: "Serpstack", configured: true,
     endpoints: [
-      { id: "search", label: "GET /search  —  Search", base: "/api/serpstack/search",
+      { id: "search", label: "GET /search  —  Search", base: proxyBase + "/serpstack/search",
         sections: [
           { title: "Required", fields: [
             { name:"query", label:"query *", type:"text", default:"mcdonalds" },
@@ -379,7 +385,7 @@ const APIS = {
             { name:"csv_fields", label:"csv_fields", type:"text",   default:"search_parameters.query,organic_results.title" },
           ]},
         ]},
-      { id: "locations", label: "GET /locations  —  Locations", base: "/api/serpstack/locations",
+      { id: "locations", label: "GET /locations  —  Locations", base: proxyBase + "/serpstack/locations",
         sections: [
           { title: "Search", fields: [ { name:"location", label:"location", type:"text", default:"New York" } ]},
           { title: "Filters", fields: [
@@ -404,33 +410,32 @@ let currentApi = "serpstack";
 let currentEndpoint = "search";
 
 const $ = id => document.getElementById(id);
-const form           = $("form");
-const apiSelect      = $("apiSelect");
+const form = $("form");
+const apiSelect = $("apiSelect");
 const endpointSelect = $("endpointSelect");
-const runBtn         = $("run");
-const resetBtn       = $("reset");
-const urlPreview     = $("urlPreview");
-const statusEl       = $("status");
-const timeEl         = $("time");
-const sizeEl         = $("size");
-const cacheEl        = $("cache");
-const responseEl     = $("response");
+const runBtn = $("run");
+const resetBtn = $("reset");
+const urlPreview = $("urlPreview");
+const statusEl = $("status");
+const timeEl = $("time");
+const sizeEl = $("size");
+const cacheEl = $("cache");
+const responseEl = $("response");
 
 const getApiCfg = () => APIS[currentApi];
 const getEndpointCfg = () =>
   (getApiCfg().endpoints || []).find(e => e.id === currentEndpoint) || getApiCfg().endpoints[0];
 
 const INPUT_CLS = "w-full min-w-0 max-w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] text-gray-900 dark:text-neutral-100 placeholder-gray-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-shadow";
-const LABEL_CLS = "text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400";
-;
-const HINT_CLS  = "text-[10px] text-gray     -500 dark:text-neutral-500 leading-t constight";
+const LABEL_CLS = "text-[10px] uppercase tracking-wider font-semibold text-gray-700 dark:text-neutral-400";
+const HINT_CLS = "text-[10px] text-gray-700 dark:text-neutral-500 leading-tight";
 
 function populateApiSelect() {
-  api valSelect.innerHTML = "";
-  for (const key of API_ORDER =) {
+  apiSelect.innerHTML = "";
+  for (const key of API_ORDER) {
     const cfg = APIS[key];
-    const opt f = document.createElement("option");
-    opt.value =.type key;
+    const opt = document.createElement("option");
+    opt.value = key;
     opt.textContent = cfg.configured ? cfg.label : `${cfg.label} (not configured)`;
     if (!cfg.configured) opt.disabled = true;
     if (key === currentApi) opt.selected = true;
@@ -510,7 +515,7 @@ function rebuildForm() {
   const ep = getEndpointCfg();
   if (!ep.sections || ep.sections.length === 0) {
     const msg = document.createElement("div");
-    msg.className = "text-[11px] text-gray-500 dark:text-neutral-500 italic py-6 text-center";
+    msg.className = "text-[11px] text-gray-700 dark:text-neutral-500 italic py-6 text-center";
     msg.innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i> No parameters — just hit Run.';
     form.appendChild(msg);
     updatePreview();
@@ -520,7 +525,7 @@ function rebuildForm() {
     const sec = document.createElement("div");
     sec.className = "space-y-1.5";
     const h = document.createElement("div");
-    h.className = "text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400 border-b border-gray-200 dark:border-neutral-800 pb-1";
+    h.className = "text-[10px] uppercase tracking-wider font-semibold text-gray-700 dark:text-neutral-400 border-b border-gray-200 dark:border-neutral-800 pb-1";
     h.textContent = section.title;
     sec.appendChild(h);
     const grid = document.createElement("div");
@@ -540,7 +545,8 @@ function collectParams() {
     for (const f of section.fields) {
       if (f.name === skipName) continue;
       const node = document.getElementById(`p-${f.name}`);
-      if (!node) continue === "toggle"
+      if (!node) continue;
+      const val = f.type === "toggle"
         ? (node.checked ? "1" : "0")
         : String(node.value ?? "").trim();
       if (val === "") continue;
@@ -581,7 +587,7 @@ function resetForm() {
 
 function resetResponse() {
   statusEl.textContent = "—";
-  statusEl.className = "font-semibold text-gray-500 dark:text-neutral-400";
+  statusEl.className = "font-semibold text-gray-700 dark:text-neutral-400";
   timeEl.innerHTML = '<i class="fa-regular fa-clock mr-1 text-[10px]"></i>—';
   sizeEl.innerHTML = '<i class="fa-solid fa-database mr-1 text-[10px]"></i>—';
   cacheEl.innerHTML = '<i class="fa-solid fa-bolt mr-1 text-[10px]"></i>—';
@@ -643,17 +649,15 @@ function selectEndpoint(epId) {
   resetResponse();
 }
 
-/* ── Theme toggle ─────────────────────────────────────────────── */
+/* Theme toggle */
 const THEME_KEY = "apilayer-theme";
 const themeBtn  = document.getElementById("themeToggle");
-const themeIcon = themeBtn.querySelector("i");
 const metaColor = document.getElementById("themeColorMeta");
 
 function applyTheme(theme, persist) {
   const isDark = theme === "dark";
   document.documentElement.classList.toggle("dark", isDark);
   document.documentElement.dataset.theme = theme;
-  themeIcon.className = isDark ? "fa-solid fa-sun text-[11px]" : "fa-solid fa-moon text-[11px]";
   themeBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
   themeBtn.setAttribute("title",      isDark ? "Switch to light mode" : "Switch to dark mode");
   if (metaColor) metaColor.content = isDark ? "#171717" : "#ffffff";
@@ -665,15 +669,13 @@ themeBtn.addEventListener("click", () => {
   applyTheme(next, true);
 });
 
-// Sync icon + meta to whatever the head script already chose.
 applyTheme(document.documentElement.classList.contains("dark") ? "dark" : "light", false);
 
-// If no explicit preference is stored, follow live OS changes.
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
   if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? "dark" : "light", false);
 });
 
-/* ── Wiring ───────────────────────────────────────────────────── */
+/* Wiring */
 apiSelect.addEventListener("change",      () => selectApi(apiSelect.value));
 endpointSelect.addEventListener("change", () => selectEndpoint(endpointSelect.value));
 form.addEventListener("input",  updatePreview);
