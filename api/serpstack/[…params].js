@@ -37,6 +37,7 @@ const SEARCH_SCHEMA = {
 };
 
 const LOCATIONS_SCHEMA = {
+  query:    { type: "text", maxLen: 200 },
   location: { type: "text", maxLen: 200 },
   q:        { type: "text", maxLen: 200 },
   region:   { type: "text", maxLen: 100 },
@@ -53,6 +54,9 @@ const QUERY_ALLOWLIST = (process.env.SEARCH_QUERY_ALLOWLIST || "")
 const cache = createCache(100);
 
 function getSegments(req) {
+  if (typeof req.query.path === "string" && req.query.path) {
+    return req.query.path.split("/").filter(Boolean);
+  }
   const raw = req.query.params;
   if (Array.isArray(raw) && raw.length) return raw;
   if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
@@ -78,6 +82,15 @@ export default async function handler(req, res) {
 
   const { out: params, errors } = coerceParams(req.query, schema);
   if (errors.length) return sendError(res, 400, "Invalid parameters", errors);
+
+  if (endpoint === "locations") {
+    if (!params.query) params.query = params.location || params.q || "";
+    delete params.location;
+    delete params.q;
+    if (!params.query) {
+      return sendError(res, 400, "locations requires ?query=... (or ?location= / ?q=)");
+    }
+  }
 
   if (endpoint === "search" && QUERY_ALLOWLIST.length) {
     const q = params.query.toLowerCase();
