@@ -1,15 +1,17 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/countrylayer", "destination": "/api/countrylayer/all" },
+    { "source": "/api/countrylayer/:path*", "destination": "/api/countrylayer/all?path=:path*" },
+    { "source": "/api/numverify/:path*", "destination": "/api/numverify/countries?path=:path*" },
+    { "source": "/api/ipstack/:path*", "destination": "/api/ipstack/standard?path=:path*" },
+    { "source": "/api/mediastack/:path*", "destination": "/api/mediastack/sources?path=:path*" },
+    { "source": "/api/serpstack/:path*", "destination": "/api/serpstack/search?path=:path*" },
+    { "source": "/api/aviationstack/:path*", "destination": "/api/aviationstack/flights?path=:path*" },
     { "source": "/api/all", "destination": "/api/countrylayer/all" },
-    { "source": "/api/countries", "destination": "/api/countrylayer/all" },
-    { "source": "/api/countries/:path*", "destination": "/api/countrylayer/:path*" },
     { "source": "/api/search", "destination": "/api/serpstack/search" },
-    { "source": "/api/serp", "destination": "/api/serpstack/search" },
     { "source": "/api/locations", "destination": "/api/serpstack/locations" }
   ],
   "functions": {
-    "api/**/*.js": { "maxDuration": 15 }
+    "api/**/*.js": { "maxDuration": 10 }
   }
 }
