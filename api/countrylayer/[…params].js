@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   if (rejectMethod(req, res)) return;
   if (requireKey(res)) return;
 
-  const segments = Array.isArray(req.query.params) ? req.query.params : [];
+  const segments = Array.isArray(rawParams) ? rawParams : typeof rawParams === "string" ? rawParams.split("/").filter(Boolean) : [];
   const endpoint = (segments[0] || "all").toLowerCase();
   const rawValue = segments.slice(1).join("/");
   const rule = ENDPOINTS[endpoint];
