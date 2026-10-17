@@ -6,8 +6,8 @@ import {
 
 const UPSTREAM = "https://api.apilayer.net/ipstack";
 
-const CACHE_BY_ENDPOINT = { check: 60 * 60, lookup: 60 * 60 * 24, standard: 60 * 60 * 24, bulk: 60 * 60 * 24 };
-const SWR_BY_ENDPOINT   = { check: 60 * 60 * 6, lookup: 60 * 60 * 24 * 7, standard: 60 * 60 * 24 * 7, bulk: 60 * 60 * 24 * 7 };
+const CACHE_BY_ENDPOINT = { check: 60 * 60, lookup: 60 * 60 * 24, standard: 60 * 60, bulk: 0 };
+const SWR_BY_ENDPOINT   = { check: 60 * 60 * 6, lookup: 60 * 60 * 24 * 7, standard: 60 * 60 * 6, bulk: 0 };
 
 const OPTIONAL = {
   fields:   { type: "text",    maxLen: 500 },
@@ -20,7 +20,7 @@ const SCHEMAS = {
   check:    {},
   lookup:   OPTIONAL,
   standard: OPTIONAL,
-  bulk:     { ips: { type: "text", maxLen: 500, required: true }, ...OPTIONAL },
+  bulk:     {},
 };
 
 const NAMED_ENDPOINTS = new Set(["check", "standard", "bulk", "lookup"]);
@@ -47,9 +47,19 @@ export default async function handler(req, res) {
   const first = (segments[0] || "").toLowerCase();
 
   let endpoint, ipValue = "";
-  if (!first)                          endpoint = "standard";
+  if (!first)                          endpoint = "check";
   else if (NAMED_ENDPOINTS.has(first)) { endpoint = first; ipValue = segments[1] || ""; }
   else                                 { endpoint = "lookup"; ipValue = first; }
+
+  if (endpoint === "bulk") {
+    return sendError(res, 400, "Bulk lookup is not supported by the apilayer IPstack proxy on the free tier.", [
+      "Use /api/ipstack/lookup/{ip} for each IP individually.",
+    ]);
+  }
+
+  if (endpoint === "lookup" && !ipValue) {
+    return sendError(res, 400, "lookup requires an IP, e.g. /api/ipstack/lookup/8.8.8.8");
+  }
 
   const schema = SCHEMAS[endpoint];
   if (!schema) {
@@ -58,7 +68,6 @@ export default async function handler(req, res) {
       debug: { url: req.url, queryKeys: Object.keys(req.query), segments },
     });
   }
-  if (endpoint === "lookup" && !ipValue) return sendError(res, 400, "lookup requires an IP, e.g. /api/ipstack/lookup/8.8.8.8");
 
   const { out: params, errors } = coerceParams(req.query, schema);
   if (errors.length) return sendError(res, 400, "Invalid parameters", errors);
@@ -72,8 +81,7 @@ export default async function handler(req, res) {
   try {
     let path;
     if (endpoint === "check")         path = "/check";
-    else if (endpoint === "standard") path = "/standard";
-    else if (endpoint === "bulk")     path = "/bulk";
+    else if (endpoint === "standard") path = "/check";
     else                              path = `/${encodeURIComponent(ipValue)}`;
 
     const search = new URLSearchParams();
