@@ -1,6 +1,6 @@
 // api/numverify/[...params].js
-// /api/numverify/countries              → /api/countries
-// /api/numverify/validate?number=…      → /api/validate?number=…
+// /api/numverify/countries          → /api/countries
+// /api/numverify/validate?number=…  → /api/validate?number=…
 
 import {
   handlePreflight, rejectMethod, requireKey, apiKey,
@@ -12,7 +12,6 @@ const UPSTREAM = "https://api.apilayer.net/numverify/api";
 
 const UPSTREAM_PATHS = { countries: "countries", validate: "validate" };
 
-// Countries is static; validate is per-number and stable for a while.
 const CACHE_BY_ENDPOINT = { countries: 60 * 60 * 24 * 7, validate: 60 * 60 * 24 };
 const SWR_BY_ENDPOINT   = { countries: 60 * 60 * 24 * 30, validate: 60 * 60 * 24 * 7 };
 
@@ -32,7 +31,13 @@ export default async function handler(req, res) {
   if (rejectMethod(req, res)) return;
   if (requireKey(res)) return;
 
-  const segments = Array.isArray(rawParams) ? rawParams : typeof rawParams === "string" ? rawParams.split("/").filter(Boolean) : [];
+  const rawParams = req.query.params;
+  const segments = Array.isArray(rawParams)
+    ? rawParams
+    : typeof rawParams === "string"
+      ? rawParams.split("/").filter(Boolean)
+      : [];
+
   const endpoint = (segments[0] || "").toLowerCase();
   const upstreamPath = UPSTREAM_PATHS[endpoint];
   if (!upstreamPath) return sendError(res, 400, "Unknown endpoint", Object.keys(UPSTREAM_PATHS));
@@ -40,7 +45,6 @@ export default async function handler(req, res) {
   const { out: params, errors } = coerceParams(req.query, SCHEMAS[endpoint]);
   if (errors.length) return sendError(res, 400, "Invalid parameters", errors);
 
-  // Trim whitespace and strip separators from phone numbers before caching.
   if (endpoint === "validate" && params.number) {
     params.number = params.number.replace(/[\s\-().]/g, "");
   }
