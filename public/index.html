@@ -17,6 +17,22 @@
   ::-webkit-scrollbar-thumb { background: rgba(120,120,140,.35); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(120,120,140,.55); }
   select { -webkit-appearance: none; appearance: none; background-image: none; }
+  input[type=date] {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
+}
+/* keep the native picker icon visible */
+input[type=date]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: .6;
+}
+input[type=date]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+  input[type=date] { color-scheme: light dark; }
 </style>
 </head>
 <body class="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 antialiased text-[13px]">
@@ -50,7 +66,7 @@
       <i class="fa-solid fa-sliders text-[10px] text-gray-400 dark:text-neutral-500"></i>
       <span class="text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400">Parameters</span>
     </div>
-    <div id="form" class="p-2 space-y-2 overflow-y-auto grow min-h-0"></div>
+    <div id="form" class="p-2 space-y-2 overflow-y-auto overflow-x-hidden grow min-h-0"></div>
     <div class="px-2 py-1.5 border-t border-gray-200 dark:border-neutral-800 flex gap-1.5 shrink-0">
       <button id="run" class="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-[12px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         <i class="fa-solid fa-play text-[10px]"></i> Run
@@ -404,7 +420,7 @@ const getApiCfg = () => APIS[currentApi];
 const getEndpointCfg = () =>
   (getApiCfg().endpoints || []).find(e => e.id === currentEndpoint) || getApiCfg().endpoints[0];
 
-const INPUT_CLS = "w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] text-gray-900 dark:text-neutral-100 placeholder-gray-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-shadow";
+const INPUT_CLS = "w-full min-w-0 max-w-full px-2 py-1 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-[12px] text-gray-900 dark:text-neutral-100 placeholder-gray-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-shadow";
 const LABEL_CLS = "text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-neutral-400";
 const HINT_CLS  = "text-[10px] text-gray-500 dark:text-neutral-500 leading-tight";
 
