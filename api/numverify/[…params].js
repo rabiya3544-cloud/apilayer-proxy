@@ -4,7 +4,7 @@
 //   /api/numverify/validate?number=…  → /api/validate?number=…
 
 import {
-  handlePreflight, rejectMethod, requireKey, apiKey,
+  handlePreflight, rejectMethod, requireAuth, apiKey,
   sendJson, sendError, coerceParams, buildCacheKey,
   createCache, isUpstreamError, readUpstream,
 } from "../_lib/apilayer.js";
@@ -40,7 +40,7 @@ function getSegments(req) {
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
   if (rejectMethod(req, res)) return;
-  if (requireKey(res)) return;
+  if (requireAuth(req, res)) return;
 
   const segments = getSegments(req);
   const endpoint = (segments[0] || "").toLowerCase();
