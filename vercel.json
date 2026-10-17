@@ -6,7 +6,7 @@
     { "source": "/api/search",           "destination": "/api/serpstack/search" },
     { "source": "/api/serp",             "destination": "/api/serpstack/search" },
     { "source": "/api/locations",        "destination": "/api/serpstack/locations" },
-    { "source": "/playground",           "destination": "/playground.html" }
+    { "source": "/index",           "destination": "/index.html" }
   ],
   "functions": {
     "api/countrylayer/[...params].js":  { "maxDuration": 10 },
