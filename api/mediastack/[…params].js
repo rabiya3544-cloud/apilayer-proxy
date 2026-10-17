@@ -32,15 +32,29 @@ SCHEMAS.live = SCHEMAS.news;
 
 const cache = createCache(100);
 
+function getSegments(req) {
+  const raw = req.query.params;
+  if (Array.isArray(raw) && raw.length) return raw;
+  if (typeof raw === "string" && raw) return raw.split("/").filter(Boolean);
+  const urlPath = String(req.url || "").split("?")[0];
+  const parts = urlPath.split("/").filter(Boolean);
+  return parts.length > 2 ? parts.slice(2) : [];
+}
+
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
   if (rejectMethod(req, res)) return;
   if (requireKey(res)) return;
 
-  const segments = Array.isArray(rawParams) ? rawParams : typeof rawParams === "string" ? rawParams.split("/").filter(Boolean) : [];
+  const segments = getSegments(req);
   const proxyEndpoint = (segments[0] || "").toLowerCase();
   const upstreamPath = UPSTREAM_PATHS[proxyEndpoint];
-  if (!upstreamPath) return sendError(res, 400, "Unknown endpoint", Object.keys(UPSTREAM_PATHS));
+  if (!upstreamPath) {
+    return sendError(res, 400, "Unknown endpoint", {
+      allowed: Object.keys(UPSTREAM_PATHS),
+      debug: { url: req.url, queryKeys: Object.keys(req.query), segments },
+    });
+  }
 
   const { out: params, errors } = coerceParams(req.query, SCHEMAS[proxyEndpoint]);
   if (errors.length) return sendError(res, 400, "Invalid parameters", errors);
