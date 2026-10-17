@@ -1,0 +1,70 @@
+// api/numverify/[...params].js
+// /api/numverify/countries              → /api/countries
+// /api/numverify/validate?number=…      → /api/validate?number=…
+
+import {
+  handlePreflight, rejectMethod, requireKey, apiKey,
+  sendJson, sendError, coerceParams, buildCacheKey,
+  createCache, isUpstreamError, readUpstream,
+} from "../_lib/apilayer.js";
+
+const UPSTREAM = "https://api.apilayer.net/numverify/api";
+
+const UPSTREAM_PATHS = { countries: "countries", validate: "validate" };
+
+// Countries is static; validate is per-number and stable for a while.
+const CACHE_BY_ENDPOINT = { countries: 60 * 60 * 24 * 7, validate: 60 * 60 * 24 };
+const SWR_BY_ENDPOINT   = { countries: 60 * 60 * 24 * 30, validate: 60 * 60 * 24 * 7 };
+
+const SCHEMAS = {
+  countries: {},
+  validate: {
+    number:       { type: "text",    maxLen: 40, required: true, hint: "Full international number (incl. country prefix)." },
+    country_code: { type: "pattern", pattern: /^[a-z]{2}$/i, hint: "2-letter ISO country code." },
+    format:       { type: "bool01",  default: "0" },
+  },
+};
+
+const cache = createCache(100);
+
+export default async function handler(req, res) {
+  if (handlePreflight(req, res)) return;
+  if (rejectMethod(req, res)) return;
+  if (requireKey(res)) return;
+
+  const segments = Array.isArray(req.query.params) ? req.query.params : [];
+  const endpoint = (segments[0] || "").toLowerCase();
+  const upstreamPath = UPSTREAM_PATHS[endpoint];
+  if (!upstreamPath) return sendError(res, 400, "Unknown endpoint", Object.keys(UPSTREAM_PATHS));
+
+  const { out: params, errors } = coerceParams(req.query, SCHEMAS[endpoint]);
+  if (errors.length) return sendError(res, 400, "Invalid parameters", errors);
+
+  // Trim whitespace and strip separators from phone numbers before caching.
+  if (endpoint === "validate" && params.number) {
+    params.number = params.number.replace(/[\s\-().]/g, "");
+  }
+
+  const cacheSeconds = CACHE_BY_ENDPOINT[endpoint];
+  const swrSeconds   = SWR_BY_ENDPOINT[endpoint];
+  const cacheKey = buildCacheKey(`numverify:${endpoint}`, params);
+  const hit = cache.get(cacheKey);
+  if (hit) return sendJson(res, hit, "HIT-LOCAL", cacheSeconds, swrSeconds);
+
+  try {
+    const search = new URLSearchParams();
+    search.set("access_key", apiKey());
+    for (const [k, v] of Object.entries(params)) search.set(k, v);
+
+    const upstream = await fetch(`${UPSTREAM}/${upstreamPath}?${search}`, { headers: { Accept: "application/json" } });
+    const { text, payload, isJson } = await readUpstream(upstream);
+    if (!isJson) return sendError(res, 502, "Upstream returned non-JSON", text.slice(0, 300));
+    if (isUpstreamError(upstream, payload, true)) {
+      return res.status(502).json({ error: "Upstream error", status: upstream.status, details: payload?.error ?? payload });
+    }
+    cache.set(cacheKey, payload, cacheSeconds * 1000);
+    return sendJson(res, payload, "MISS", cacheSeconds, swrSeconds);
+  } catch (err) {
+    return sendError(res, 500, "Proxy request failed", err?.message ?? String(err));
+  }
+}
