@@ -96,7 +96,12 @@ export default async function handler(req, res) {
     const search = new URLSearchParams();
     search.set("access_key", apiKey());
     for (const [k, v] of Object.entries(params)) search.set(k, v);
-    const upstream = await fetch(`${UPSTREAM}/${upstreamPath}?${search}`, { headers: { Accept: "application/json" } });
+    const controller = new AbortController();
+const timer = setTimeout(() => controller.abort(), 8000);
+const upstream = await fetch(`${UPSTREAM}/${upstreamPath}?${search}`, {
+  headers: { Accept: "application/json" },
+  signal: controller.signal,
+}).finally(() => clearTimeout(timer));
     const { text, payload, isJson } = await readUpstream(upstream);
     if (!isJson) return sendError(res, 502, "Upstream returned non-JSON", text.slice(0, 300));
     if (isUpstreamError(upstream, payload, true)) {
@@ -104,7 +109,10 @@ export default async function handler(req, res) {
     }
     cache.set(cacheKey, payload, cacheSeconds * 1000);
     return sendJson(res, payload, "MISS", cacheSeconds, swrSeconds);
-  } catch (err) {
-    return sendError(res, 500, "Proxy request failed", err?.message ?? String(err));
+ } catch (err) {
+  if (err?.name === "AbortError") {
+    return sendError(res, 504, "Upstream timeout", "Aviationstack took longer than 8s. Try again or narrow the query.");
   }
+  return sendError(res, 500, "Proxy request failed", err?.message ?? String(err));
+}
 }
