@@ -130,6 +130,9 @@ const upstream = await fetch(`${UPSTREAM}/${endpoint}?${search}`, {
     if (size <= 1024 * 1024) cache.set(cacheKey, { data: outData, contentType: outType }, cacheSeconds * 1000);
     return sendPayload(res, outData, outType, "MISS", cacheSeconds, swrSeconds);
   } catch (err) {
-    return sendError(res, 500, "Proxy request failed", err?.message ?? String(err));
+  if (err?.name === "AbortError") {
+    return sendError(res, 504, "Upstream timeout", "Serpstack took longer than 8s. Try again or narrow the query.");
   }
+  return sendError(res, 500, "Proxy request failed", err?.message ?? String(err));
+}
 }
