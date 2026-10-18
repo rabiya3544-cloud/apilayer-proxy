@@ -79,9 +79,7 @@ html.dark body.logged-in {
 }
 </style>
 </head>
-<!--
-<body class="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 antialiased text-[13px]">
--->
+
 <body class="h-dvh text-gray-900 dark:text-neutral-100 antialiased text-[13px] overflow-hidden not-logged">
 
 <div id="loginOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none">
@@ -111,6 +109,10 @@ html.dark body.logged-in {
     </div>
 
 <div class="order-2 sm:order-3 ml-auto shrink-0 flex items-center gap-1.5">
+  <a href="/test" aria-label="Open test harness" title="Open test harness"
+    class="inline-flex items-center justify-center w-7 h-7 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 text-gray-600 dark:text-neutral-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+    <i class="fa-solid fa-flask text-[11px]"></i>
+  </a>
   <button id="signOutBtn" type="button" aria-label="Sign out" title="Sign out"
     class="inline-flex items-center justify-center w-7 h-7 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 text-gray-600 dark:text-neutral-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40">
     <i class="fa-solid fa-right-from-bracket text-[11px]"></i>
